@@ -13,6 +13,7 @@ Github Actions是Github提供的一项持续集成和持续交付服务，与仓
 GitHub可以提供 Linux、Windows 和 macOS 虚拟机来运行你的工作流程，在使用Github Actions之前，你需要了解以下前置知识:  
 * Yaml基础语法
 * Linux（或Windows或macOS）脚本相关知识
+* Git及Github的相关知识
 
 ### 什么是Yaml
 当创建Github Actions时，会在代码库.github/workflows目录下，创建一个.yml 文件，每个yml对应一个工作流。
@@ -42,4 +43,146 @@ Github Actions可以免费使用，也可以付费使用，其中免费用户有
 （笔者没看懂这项目）
 更详细内容可以在官网中找到[usage-limits-billing-and-administration](https://docs.github.com/zh/actions/learn-github-actions/usage-limits-billing-and-administration)
 
-##  Docker镜像构建流程
+##  Docker镜像的构建
+在Github Actions中配置Docker镜像构建的过程非常简单。通过定义workflow，我们可以指定触发条件、构建步骤和依赖关系。配置一个构建步骤，执行Docker镜像的构建，确保在每次代码推送时触发自动构建流程。这种自动化的构建流程不仅提高了效率，还减少了人为出错的可能性。
+首先打开你的Github 代码库，点击Actions
+![](vx_images/442624416231165.png)
+点击New workflow按钮
+![](vx_images/372014516249591.png)
+
+搜索Docker，会有很多workflow模板，其中Docker Image是最为最简洁的模板，我们将使用它作为教程示例
+点击Configure，进入编写yml，编写任务
+<mark>顺带一提，隔壁那个模板很复杂……但它是官方模板，英文好可以研究研究</mark>
+![](vx_images/354134616237458.png)
+
+官方默认模板内容如下，当push或者pull master分支时，触发构建流程：
+```yaml
+name: Docker Image CI
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build the Docker image
+      run: docker build . --file Dockerfile --tag my-image-name:$(date +%s)
+```
+run标签，就是linux下的shell脚本，既然是shell，那么就可以做很多事情了。
+比如说你原本已有一套构建脚本(build.sh)，那么可能稍作修改，就能用着Github Actions中，run改为sh build.sh即可。
+回到前言所说的内容，笔者痛点是希望找一个人工智能的运行环境镜像，但没有整合的，人工智能的镜像一般又很大，各环境单独一个镜像下载慢又占空间，在whl包不冲突的情况下，装在一起能省很多控件，于是乎就诞生了本项目：[Wlkr.DockerBuild](https://github.com/DimWalker/Wlkr.DockerBuild)
+注意，本项目目的是编译基础环境的镜像，没有什么代码，可能常规的项目编译有所出入，请自行甄选。
+
+观察Wlkr.AiRuntime项目，会见到有多个 Dockfile，此举是为了避免编译失败，导致漫长的构建过程又要重新编译。
+比如Ubuntu镜像默认没有python，除了python还有其他一些深度学习所需的基础组件也没有，当你编译通过python后，安装pytorch报错缺失组件，规划不好又要从python那个步骤开发编译，非常浪费时间。
+在分而治之的思想指导下， 最终镜像构建分为了7个Dockerfile。
+修改工作流的yml，改为监听这7个Dockerfile和一个python文件
+```yaml
+name: Docker Image CI
+on:
+  push:
+    # 监听的分支
+    branches: 
+      - master 
+    # 监听的文件
+    paths: 
+      - 'Wlkr.AiRuntime/Dockerfile*'
+      - 'Wlkr.AiRuntime/model_init.py' 
+```
+如果你在自己的linux服务器下编译过docker镜像，Dockerfile中编译成功的步骤会有一个缓存layer，减少编译的所需时间。
+但是在Github Actions中，每次执行工作流，均没有缓存。
+同时我所编译的镜像是环环相扣的，上一层镜像有改动时，下层的所有镜像也应该重新编译。
+有没有优化的可能？答案是有的！
+先定义7个flag变量
+```yaml
+env:
+  flag_python: 0
+  flag_pytorch: 0
+  flag_modelscope: 0
+  flag_modelscope_cv: 0
+  flag_mscv_pd: 0
+  flag_mscv_pdocr: 0
+  flag_mscv_pdocr_mdl: 0
+  flag_done: 0
+```
+修改拉取代码的action，默认会带上参数--dept=1，无法满足后续的操作
+```yaml
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v3
+      with:
+        fetch-depth: 2 #加上这个参数
+```
+在上面监听文件中，我们监听了所有Dockerfile，显然没有变动的Dockerfile，我们是不需要重新编译重新构建的。
+那么怎么知道哪些文件有变动，哪个镜像需要重新编译？答案就是commit后产生的sha id
+![](vx_images/122213817257624.png)
+利用`git diff`命令，检查上一次commit与本次commit的文件是否不同，如果不容，则修改flag，标记为需要编译。
+```yaml
+    - name: Check Modify
+      run: |        
+        echo "previous_sha=${{ github.event.before }}"
+
+        cd Wlkr.AiRuntime
+        # python
+        if [ -n "$(git diff --name-only ${{ github.event.before }} HEAD -- Dockerfile.python)" ]; then
+          echo "flag_python=1" >> $GITHUB_ENV
+        fi
+        # 其他flag省略
+```
+在构建的action中，加上添加`if: env.flag_python == 1`，来确定是否要执行编译，如果要则将下一步骤的flag也改为1。
+```yaml
+    - name: Build python
+      if: env.flag_python == 1
+      run: |
+        cd Wlkr.AiRuntime
+        # 基础
+        docker build -f Dockerfile.python -t dimwalker/wlkr.python .        
+        echo "flag_pytorch=1" >> $GITHUB_ENV
+```
+至此，编译的优化已完成。
+需要注意，每个action都是独立的，也就是说工作目录`cd Wlkr.AiRuntime`要在每个step中先运行一次。
+
+## Docker镜像的推送
+Docker Hub作为一个广泛使用的Docker镜像仓库，为开发者提供了便捷的镜像存储和分享平台。通过Github Actions，我们可以配置自动将构建好的Docker镜像推送到Docker Hub。这一步骤使得我们的应用在构建完成后，能够迅速被部署和共享，为团队协作和持续集成提供了更多可能性。
+但是，这有一个风险，docker hub的镜像时开源的！
+有商用、涉密等要求，请慎重使用。
+
+现在先回到Github Actions的workflow编辑页面，它的右边也是有很多action模板的！
+![](vx_images/546684817250293.png)
+把Docker login的代码复制进你的workflow yml中，放在steps靠前的位置
+![](vx_images/22125317246848.png)
+保留示例中的三个参数即可
+其中在`env`节点加上变脸`REGISTRY`，留空是将镜像推送到docker hub中，如果是其他库则填相应的地址
+
+```
+    - name: Docker Login   
+      uses: docker/login-action@v3.0.0
+      with:      
+        registry: ${{ env.REGISTRY }}     
+        username: ${{ secrets.DOCKERACC }}     
+        password: ${{ secrets.DOCKERPWD }}
+```
+`DOCKERACC`和`DOCKERPWD`则需要在代码库中的settings里设置。
+按照docker官网说法，这的PWD也可以是你设置的一个token，多人协作就不怕密码泄露的风险
+![](vx_images/272835817242602.png)
+
+稍微修改构建的步骤，增加依据`push`命令
+```yaml
+    - name: Build & Push python
+      if: env.flag_python == 1
+      run: |
+        cd Wlkr.AiRuntime
+        # 基础
+        docker build -f Dockerfile.python -t dimwalker/wlkr.python .
+        docker push dimwalker/wlkr.python:latest
+        echo "flag_pytorch=1" >> $GITHUB_ENV
+```
+至此，一个构建流程复杂，且构建后比官方镜像还要小的深度学习环境镜像已完成，鼓掌
+![](vx_images/145601018260482.png)
