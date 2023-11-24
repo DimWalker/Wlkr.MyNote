@@ -1,0 +1,10 @@
+
+VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath F:\Project_Private\Wlkr.MyNote\2023\11\24\【AI达人创造营三期】在地平线X3上部署车牌识别系统.md
+
+VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath F:\Project_Private\Wlkr.MyNote\2023\11\24\老派Sql之必要.md
+
+VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath F:\Project_Private\Wlkr.MyNote\2023\11\24\利用信号量SemaphoreSlim实现PaddleOCR的线程安全访问.md
+
+VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath "F:\Project_Private\Wlkr.MyNote\2023\11\24\使用Github Actions实现构建、发布到 nuget.org.md"
+
+VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath F:\Project_Private\Wlkr.MyNote\2023\11\24\人工智能结合模板实现表格信息提取.md
