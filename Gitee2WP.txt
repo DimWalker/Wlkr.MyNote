@@ -1,3 +1,6 @@
+FormatMd  Github2NugetMd Github2CsdnMd Gitee2WordpressMd CnBlogsMd
+Github 示例: https://raw.githubusercontent.com/{acc}/{repo}/{branch}/vx_images/
+Gitee 示例: https://gitee.com/{acc}/{repo}/raw/{branch}/vx_images/
 
 VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath F:\Project_Private\Wlkr.MyNote\2023\11\24\【AI达人创造营三期】在地平线X3上部署车牌识别系统.md
 
@@ -8,3 +11,13 @@ VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/
 VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath "F:\Project_Private\Wlkr.MyNote\2023\11\24\使用Github Actions实现构建、发布到 nuget.org.md"
 
 VNoteTools -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath F:\Project_Private\Wlkr.MyNote\2023\11\24\人工智能结合模板实现表格信息提取.md
+
+
+
+..\VNoteTools\VNoteTools\bin\Debug\net6.0\VNoteTools.exe -Method FormatMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath ".\2023\11\24\[GitOps] 白嫖神器Github Actions，构建、推送Docker镜像畅通无阻.md"
+
+..\VNoteTools\VNoteTools\bin\Debug\net6.0\VNoteTools.exe -Method Gitee2WordpressMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath ".\2023\11\24\[GitOps] 白嫖神器Github Actions，构建、推送Docker镜像畅通无阻.md"
+
+..\VNoteTools\VNoteTools\bin\Debug\net6.0\VNoteTools.exe -Method Github2CsdnMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath ".\2023\11\24\[GitOps] 白嫖神器Github Actions，构建、推送Docker镜像畅通无阻.md"
+
+..\VNoteTools\VNoteTools\bin\Debug\net6.0\VNoteTools.exe -Method CnBlogsMd -github_image_prefix_url https://gitee.com/dimwalker/Wlkr.MyNote/raw/master/2023/11/24/vx_images/ -InputMdPath ".\2023\11\24\[GitOps] 白嫖神器Github Actions，构建、推送Docker镜像畅通无阻.md"
